@@ -1,6 +1,7 @@
 use crate::iter_set::{Iter, OwningIter};
 #[cfg(feature = "raw-api")]
 use crate::lock::RwLock;
+use crate::mapref::entry::Entry;
 use crate::setref::one::Ref;
 use crate::DashMap;
 #[cfg(feature = "raw-api")]
@@ -291,6 +292,26 @@ impl<'a, K: 'a + Eq + Hash, S: BuildHasher + Clone> DashSet<K, S> {
     {
         self.inner.get(key).map(Ref::new)
     }
+
+    /// Advanced entry API that tries to mimic `std::collections::HashMap`.
+    /// See the documentation on `dashmap::mapref::entry` for more details.
+    ///
+    /// **Locking behaviour:** May deadlock if called when holding any sort of reference into the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dashmap::DashSet;
+    ///
+    /// let youtubers = DashSet::new();
+    /// youtubers.entry("Bosnian Bill").or_insert(());
+    /// assert_eq!(*youtubers.get("Bosnian Bill").unwrap(), "Bosnian Bill");
+    /// ```
+    #[inline]
+    pub fn entry(&'a self, key: K) -> Entry<'a, K, (), S> {
+        self.inner.entry(key)
+    }
+
     /// Remove excess capacity to reduce memory usage.
     #[inline]
     pub fn shrink_to_fit(&self) {
